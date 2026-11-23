@@ -8959,7 +8959,7 @@ lookupWithLength(XML_Parser parser, HASH_TABLE *table, KEY name, size_t nameLen,
     unsigned long mask = (unsigned long)table->size - 1;
     i = h & mask;
     for (unsigned char step = 0; table->v[i];) {
-      if (keyeq(name, nameLen, table->v[i]->name))
+      if (keyeq(name, nameLen, *(KEY *)(table->v[i])))
         return table->v[i];
       if (! step)
         step = PROBE_STEP(h, mask, table->power);
@@ -8992,7 +8992,7 @@ lookupWithLength(XML_Parser parser, HASH_TABLE *table, KEY name, size_t nameLen,
       memset(newV, 0, tsize);
       for (i = 0; i < table->size; i++)
         if (table->v[i]) {
-          KEY const key = table->v[i]->name;
+          KEY const key = *(KEY *)(table->v[i]);
           unsigned long newHash = hash(parser, key, keylen(key));
           size_t j = newHash & newMask;
           for (unsigned char step = 0; newV[j];) {
@@ -9014,12 +9014,13 @@ lookupWithLength(XML_Parser parser, HASH_TABLE *table, KEY name, size_t nameLen,
       }
     }
   }
-  assert(createSize >= sizeof(NAMED));
+  assert(createSize >= sizeof(KEY));
   table->v[i] = MALLOC(table->parser, createSize);
   if (! table->v[i])
     return NULL;
   memset(table->v[i], 0, createSize);
-  table->v[i]->name = name; // NOTE: This requires and assumes zero termination!
+  *(KEY *)(table->v[i])
+      = name; // NOTE: This requires and assumes zero termination!
   (table->used)++;
   return table->v[i];
 }
